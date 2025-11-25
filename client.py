@@ -25,7 +25,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.fernet import Fernet
 
 # --- Configuration ---
-SERVER_IP = '127.0.0.1' # CHANGE THIS to your server IP
+SERVER_IP = 'gus' # tailscale
 SERVER_PORT = 9999
 
 class CryptoManager:
