@@ -229,11 +229,15 @@ class ChatScreen(Screen):
     def fetch_users(self):
         """Fetches the list of users from the server."""
         res = self.net.send_request({'cmd': 'GET_USERS'})
-        user_list = self.query_one("#user-list", ListView)
         if res and res['status'] == 'success':
-            for user in res['users']:
-                if user != self.crypto.username: # Don't list self
+            users_to_add = [user for user in res['users'] if user != self.crypto.username]
+
+            # Schedule the UI update on the main thread
+            def update_ui():
+                user_list = self.query_one("#user-list", ListView)
+                for user in users_to_add:
                     user_list.append(ListItem(Label(user)))
+            self.app.call_from_thread(update_ui)
 
     @work(exclusive=True, thread=True)
     def poll_messages(self):
@@ -255,7 +259,7 @@ class ChatScreen(Screen):
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle user selection from the list."""
-        self.current_chat_user = event.item.children[0].renderable
+        self.current_chat_user = event.item.get_child_by_type(Label).content
         self.query_one("#message-area", MessageArea).remove_children()
         self.query_one("#message-area", MessageArea).mount(Static(f"Chat with {self.current_chat_user}", classes="system-message"))
         input_widget = self.query_one("#message-input", Input)
@@ -263,8 +267,8 @@ class ChatScreen(Screen):
         input_widget.disabled = False
         input_widget.focus()
 
-    @work(exclusive=True)
-    async def on_input_submitted(self, event: Input.Submitted) -> None:
+    @work(exclusive=True, thread=True)
+    def on_input_submitted(self, event: Input.Submitted) -> None:
         """Handle sending a message."""
         msg_text = event.value
         target = self.current_chat_user
@@ -289,13 +293,14 @@ class ChatScreen(Screen):
                     'content': payload
                 })
                 if send_res['status'] == 'success':
-                    message_area.add_message(msg_text, self.crypto.username, is_me=True)
+                    # UI updates must be scheduled on the main thread
+                    self.app.call_from_thread(message_area.add_message, msg_text, self.crypto.username, True)
                 else:
-                    message_area.add_message(f"[Error] {send_res.get('msg')}", "System", is_me=False)
+                    self.app.call_from_thread(message_area.add_message, f"[Error] {send_res.get('msg')}", "System", False)
             except Exception as e:
-                message_area.add_message(f"[Error] Encryption failed: {str(e)}", "System", is_me=False)
+                self.app.call_from_thread(message_area.add_message, f"[Error] Encryption failed: {str(e)}", "System", False)
         else:
-            message_area.add_message(f"[Error] User {target} not found.", "System", is_me=False)
+            self.app.call_from_thread(message_area.add_message, f"[Error] User {target} not found.", "System", False)
 
 class LoginScreen(Screen):
     """Screen for user login and registration."""
