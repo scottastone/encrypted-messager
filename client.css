@@ -1,0 +1,53 @@
+/* Login Screen Styling */
+LoginScreen {
+    align: center middle;
+}
+
+#login-box {
+    width: 40;
+    height: auto;
+    padding: 2;
+    border: thick $primary;
+    background: $surface;
+}
+
+#title {
+    content-align: center middle;
+    width: 100%;
+    margin-bottom: 1;
+}
+
+#buttons {
+    width: 100%;
+    align-horizontal: center;
+    margin-top: 1;
+}
+
+#status {
+    margin-top: 1;
+    color: $warning;
+    text-align: center;
+}
+
+/* Chat Screen Styling */
+#app-grid {
+    layout: grid;
+    grid-size: 2;
+    grid-columns: 30 1fr;
+    /* 30 cells for user list, rest for messages */
+}
+
+#user-list {
+    border-right: solid $primary;
+}
+
+#message-area {
+    padding: 1;
+}
+
+.message {
+    margin: 1 0;
+    padding: 1;
+    border: round;
+    width: 80%;
+}
